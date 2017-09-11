@@ -1,0 +1,55 @@
+@extends('standard.admin.layout')
+@section('content')
+@include('standard.admin.settings.sidebar')
+#mainContent.themes.left
+  %h3.page-title.page-title-themes Themes
+  #themes-message
+  - if (!empty($saved))
+    .status-message Settings successfully saved!
+  - foreach ($errors->all() as $errorMessage)
+    .error-message= $errorMessage
+  %form#themes_form.settings_form(method="post" enctype="multipart/form-data")
+    != Form::token()
+    %label Base theme:
+    .theme-wrapper
+      .theme
+        .thumbnail
+          %a(href=asset('/img/screenshots/square.png') target="_blank")
+            %img(alt="square theme" src=asset('/img/screenshots/square.thumb.png'))
+        .name
+          != Form::radio('themes', 'square', \AdminDAO::getTheme() == \AdminDAO::THEME_SQUARE, ['id' => 'square'])
+          %label(for="square") Square
+      .theme
+        .thumbnail
+          %a(href=asset('/img/screenshots/rounded.png') target="_blank")
+            %img(alt="rounded theme" src=asset('/img/screenshots/rounded.thumb.png'))
+        .name
+          != Form::radio('themes', 'rounded', \AdminDAO::getTheme() == \AdminDAO::THEME_ROUNDED, ['id' => 'rounded'])
+          %label(for="rounded") Rounded
+      -if (app()->environment('local'))
+        .theme
+          .thumbnail
+            %a(href=asset('/img/screenshots/rebirth.png') target="_blank")
+              %img(alt="rebirth theme" src=asset('/img/screenshots/rebirth.thumb.png'))
+          .name
+            != Form::radio('themes', 'rebirth', \AdminDAO::getTheme() == \AdminDAO::THEME_REBIRTH, ['id' => 'rebirth'])
+            %label(for="rebirth") Rebirth
+    != Form::checkbox('enable-custom-css', 1, \AdminDAO::isEnableCustomCss(), ['id' => 'enable-custom-css'])
+    %label(for="enable-custom-css") Enable custom CSS
+    .theme-wrapper.css-drop-zone
+      .custom-file
+        %p= \AdminDAO::getCustomCssFile() ? \AdminDAO::getCustomCssFile() : 'NO CUSTOM CSS UPLOADED YET'
+      %button#upload_css.btn.btn-default(type="button") Upload CSS File
+      != Form::file('custom_css_file', ['id' => 'custom_css_file', 'accept' => 'text/css'])
+    %h3.page-title.page-title-themes Embed ReadyReturns
+    .width-block
+      %label Width
+      != Form::text('width', \AdminDAO::getIframeWidth(), ['id' => 'width', 'accept' => 'text/css'])
+      px
+      %a#reset(data-width=$defaultIframeWidth) Reset
+    %p.description Copy and paste the following HTML in to your website:
+    != Form::textarea('embed-code', $embedCode, ['id' => 'embed-code', 'size' => '60x10', 'readonly' => 'readonly'])
+    %hr.divider
+    %button#themes-save.btn.btn-success.right(type="submit") Save
+    %a.btn.btn-warning.btn-cancel.right(href=url('/admin')) Cancel
+@stop

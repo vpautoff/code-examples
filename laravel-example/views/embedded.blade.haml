@@ -1,0 +1,39 @@
+!!! 5
+%html(lang="en")
+  %head
+    %link(href=asset('favicon.png') rel="icon" type="image/png")
+    @section('css')
+    != Html::style('//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css')
+    != Html::style(elixir('css/themes/base.css'))
+    != Html::style(elixir('css/themes/' . AdminDAO::getTheme() . '.css'))
+    - $frontendCss = getFrontendCssUrl();
+    - if ($frontendCss)
+      != Html::style($frontendCss)
+    - if (AdminDAO::isEnableCustomCss() && AdminDAO::getCustomCssFile())
+      - $customThemeUrl = (new AmazonS3Client())->getCssFileUrl(AdminDAO::getCustomCssFile());
+      != Html::style($customThemeUrl)
+    @show
+    @section('js')
+    @show
+    %meta(charset="utf-8")
+    %title
+      @yield('title')
+    %meta(content="width=device-width,initial-scale=1" name="viewport")
+    %meta(content=csrf_token() name="csrf-token")
+    /[if lt IE 9] <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  %body
+    @section('body')
+    .page
+      - if (isset($trueTemplateContent))
+        != $trueTemplateContent
+      @yield('content')
+      - if (AdminDAO::getBool('TEMPLATE_SHOW_POWERED_BY'))
+        %footer.clearfix
+          %a.pull-right(alt="ReadyCloud Shipping Software" href="https://www.readycloud.com/readyreturns-ecommerce-returns-software" target="_blank") #{app('flow')->getPoweredByText()}
+    @show
+    @section('footer-js')
+    %script(src=asset(elixir('js/standard/common.js')))
+    %script(src=asset(elixir('js/standard/frontend.js')))
+    - if (app()->environment('local'))
+      %script(src=asset(elixir('js/local/common.js')))
+    @show

@@ -1,0 +1,23 @@
+<script type="text/javascript">
+    $(function() {
+        $(".book_title").click(function() {
+            var bookId = $(this).parent().attr('id').substring(5);
+            getBookInfo(bookId);
+        });
+    });
+</script>
+
+<div class="header blue">BOOK SEARCH RESULT</div>
+<div class="search_results">
+    <?php if (count($this->books)):?>
+        <?php foreach ($this->books as $book):?>
+            <div class="search_result" id="book_<?php echo $book['book_id']?>">
+                <div class="book_title"><a><?php echo $book['title']?></a></div>
+                <div>by <?php echo $book['authors']?></div>
+            </div>
+        <?php endforeach;?>
+        <?php echo  $this->paginationControl($this->books, 'Sliding', '/partial/admin_pagination_control.phtml', ['mode' => 'book']); ?>
+    <?php else:?>
+        <div class="empty_message">No books found</div>
+    <?php endif;?>
+</div>

@@ -1,0 +1,241 @@
+<script type="text/javascript" src="/themes/js/combobox.js"></script>
+<script type="text/javascript" >
+
+    $(function() {
+        var bookId = '<?php echo $this->bookId; ?>';
+
+        var overviewEditor = new wysihtml5.Editor("form_book_overview", {
+            toolbar:      "form_book_overview-toolbar",
+            parserRules:  wysihtml5ParserRules,
+            stylesheets: "/themes/js/wysihtml5-master/stylesheet.css"
+        });
+
+        var featuresEditor = new wysihtml5.Editor("form_book_features", {
+            toolbar:      "form_book_features-toolbar",
+            parserRules:  wysihtml5ParserRules,
+            stylesheets: "/themes/js/wysihtml5-master/stylesheet.css"
+        });
+
+        function checkIfAllEditorsLoaded() {
+            var editors = parseInt($(".middle").data("editors"));
+            $(".middle").data("editors", ++editors);
+            return editors == 2;
+        }
+
+        $(".middle").data("editors", 0);
+
+        overviewEditor.on("load", function() {
+            if(checkIfAllEditorsLoaded()) {
+                alignColumnHeight();
+            }
+        });
+
+        featuresEditor.on("load", function() {
+            if(checkIfAllEditorsLoaded()) {
+                alignColumnHeight();
+            }
+        });
+
+    // To show price field if not free mode is selected.
+    $(".form_book_is_free input[value='0']").click(function() {
+
+        // Check book type at first.
+        var form     = $(this).parents("form");
+        var bookType = $(form).find("input[name='form_book_type']:checked").val();
+
+        if (typeof bookType == 'undefined') {
+             alertBox("Choose book type at first");
+             return false;
+        }
+
+        if (bookType == 'both') {
+            $(form).find(".form_book_price_digital").show("fast");
+            $(form).find(".form_book_price_printed").show("fast");     
+        } else {
+             $(form).find(".form_book_buy_price").show("fast");
+        }
+    });
+
+    // Hide prices fields according to book type.
+     $("input[name='form_book_type']").change(function() {
+          var form     = $(this).parents("form");
+          var freeAccess   = $(form).find("input[name='form_book_is_free']:checked").val();
+          var bookType = $(form).find("input[name='form_book_type']:checked").val();
+          var shippingFields = ['form_book_weight_pound'];
+
+          // Work with prices fields.
+          if(freeAccess == '0') {
+               // Show two fields with prices.
+               if (bookType == 'both') {
+                   $(form).find(".form_book_buy_price").hide("fast");
+                   $(form).find(".form_book_price_digital").show("fast");
+                   $(form).find(".form_book_price_printed").show("fast");
+               } else {
+               // Show only one field for price.
+                    $(form).find(".form_book_buy_price").show("fast");
+                    $(form).find(".form_book_price_digital").hide("fast");
+                    $(form).find(".form_book_price_printed").hide("fast");     
+               }
+          }
+
+          // Work with ISBN fields.
+          if (bookType == 'both') {
+              // Show 2 fields for ISBN
+              $(form).find(".form_book_isbn").hide("fast");
+              $(form).find(".form_book_isbn_digital").show("fast");
+              $(form).find(".form_book_isbn_printed").show("fast");     
+          } else {
+              // Show only one fields for ISBN.
+              $(form).find(".form_book_isbn").show("fast");
+              $(form).find(".form_book_isbn_digital").hide("fast");
+              $(form).find(".form_book_isbn_printed").hide("fast");
+          }
+
+        // Work with shipping fields (weight, width, height, length).
+        if(bookType == 'digital') {
+            // Hide all these fields.
+            $.each(shippingFields, function(i, field) {
+               $(form).find("."+field).hide("fast");
+            });
+        } else {
+            // Show all these fields.
+            $.each(shippingFields, function(i, field) {
+                $(form).find("."+field).show("fast");
+            });
+        }
+     });
+
+     //To hide price field if free mode is selected
+     $(".form_book_is_free input[value='1']").click(function() {
+          $(this).parents("form").find("div[class*=price]").hide("fast");
+     });
+
+     //Show upload file element if book is digital
+     $("input[value='digital'],[value='both']").click(function() {
+          $(this).parents("form").find(".form_book_file").show("fast");
+     });
+
+    //Hide "Upload File" field if 'Printed' type is selected
+     $("input[value='printed']").click(function() {
+          $(this).parents("form").find(".form_book_file").hide("fast");
+     });
+
+    initDigitsFilter('input[id*="price"]');
+
+    <?php if($this->usertype != 'admin'):?>
+        // Get re-upload to ACS modal window.
+        $.ajax({
+            url: '/author-publisher/init-reupload-acs-file-modal',
+            data: "itemType=book&itemId="+bookId,
+            success: function(data) {
+                $("#book_info").after(data);
+            }
+        });
+
+        $("#reupload_file_link").click(function() {
+            $("#acs_reupload_modal").remoteJSON({path:'/author-publisher/generate-text-for-reupload-acs-file-modal?' +
+                'itemType=book'+
+                '&itemId='+bookId, callback: function() {$("#acs_reupload_modal .reuploadBtn").show();}});
+        });
+    <?php endif;?>
+});
+</script>
+
+<?php if($this->mode == 'add'):?>
+     <div class="blue header">ADD NEW BOOK</div>
+<?php elseif($this->mode == 'approve'):?>
+     <div class="blue header">UNAPPROVED BOOK</div>
+<?php else:?>
+     <div class="blue header">BOOK SELECTED</div>
+<?php endif;?>
+<div id="book_info">
+<form id="form_addbook" name="form_addbook" method="post" enctype="multipart/form-data" >
+<?php if($this->showStatus):?>
+     <div class="formrow form_book_status">
+          <div class="formleft"> Book Status</div>
+          <div class="formright <?php echo str_replace(' ', '_', $this->bookStatus);?>"><?php echo $this->bookStatus;?></div>
+          <div class="clear"></div>
+     </div>
+     <?php if($this->bookType != 'printed'):?>
+          <div class="formrow form_acs_status">
+               <div class="formleft"> ACS Status</div>
+               <div class="formright <?php echo str_replace(' ', '_', $this->acsStatus);?>"> 
+                    <div>
+                         <div class="acs_status"><?php echo $this->acsStatus;?></div>
+                    <?php if($this->usertype != 'admin'):?>
+                        <div id="acs_info"><div id="reupload_file_link" class="button"></div></div>
+                    <?php endif;?>
+                    </div>
+                    <div class="thin_clear"></div>
+               </div>
+               <div class="clear"></div>
+          </div>
+     <?php endif;?>
+<?php endif;?>
+<?php foreach($this->formBook as $element):?>
+     <?php $name = $element->getName();?>
+     <?php if($name == 'form_book_file_id' || $name == 'form_book_authors_edit'):?>
+          <?php echo $element; ?>
+          <?php continue;?>
+     <?php elseif(strpos($name, 'form_rent_price_') === 0):?>
+          <?php continue;?>
+     <?php endif;?>
+     
+     <div class="formrow <?php echo $name;
+          if((stristr($name, 'price') && $this->showPrices == false) || ($name=='form_book_file' && ($this->mode != 'add' || (($type = $this->formBook->getElement('form_book_type')->getValue()) == 'printed' || empty($type))))) {
+              echo ' hidden ';
+          } elseif(isset($this->hideFields)) {
+               foreach ($this->hideFields as $fieldName) {
+                    if(!strcmp($name, $fieldName)) {
+                         echo ' hidden ';
+                         break;
+                    }
+               }     
+          }
+          ?>">
+          
+          <div class="formleft"><?php echo $element->getLabel();?></div>
+          <div class="formright">
+               <?php if($name == 'form_book_file'):?>
+                    <div class="fake_upload">
+                         <?php echo $element;?>
+                          <div class="arrow_right button" id="book_file_uploader"></div>
+                    </div>
+            <?php elseif($name == 'form_book_overview' || $name == 'form_book_features'):?>
+                <div class="btn-group textarea-toolbar" id="<?php echo $name?>-toolbar" style="display: none;">
+                    <button class="btn" data-wysihtml5-command="bold"><span class="icon icon-bold"></span></button>
+                    <button class="btn" data-wysihtml5-command="italic"><span class="icon icon-italic"></span></button>
+                    <button class="btn" data-wysihtml5-command="insertUnorderedList"><span class="icon icon-list"></span></button>
+                </div>
+                <?php echo $element?>
+            <?php else:?>
+                    <?php echo $element;?>
+               <?php endif;?>
+          </div>
+        <div class="thin_clear"></div>
+          <div class="errors">
+          <?php foreach($element->getMessages() as $errorMsg):?>
+               <?php echo $this->escape($errorMsg);?>
+          <?php endforeach;?>
+          </div>
+          <div class="clear">&nbsp;</div>
+     </div>
+<?php endforeach;?>
+</form>
+<?php if($this->mode == 'add'):?>
+     <div id="submit_new_book" class="save_btn button"></div>
+<?php elseif($this->mode == 'approve'):?>
+    <div id="approve_btn" class="button book"></div>
+<?php elseif($this->mode == 'edit' && $this->allowMakeChanges):?>
+     <div id="savechanges_btn" class="button"></div>
+<?php endif;?>
+</div>
+
+<div class="thin_clear"></div>
+
+<script type="text/javascript">
+    <?php if($this->bookId == 0):?>
+        var uploader = initializePluploader($('#book_file_uploader')[0], $('#form_book_file'), 'book');
+        uploader.init();
+    <?php endif;?>
+</script>
